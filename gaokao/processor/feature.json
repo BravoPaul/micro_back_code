@@ -1,0 +1,192 @@
+{
+  "feature": [
+    {
+      "fea_name": "sch_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "batch_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_user",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_user",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_min_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_min_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_min_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_avg_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_avg_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_avg_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_max_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_max_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "score_max_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_min_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_min_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_min_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_avg_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_avg_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_avg_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_max_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_max_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "rank_max_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_1_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_1_min_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_1_min_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_1_min_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_2_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_2_min_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_2_min_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_2_min_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_3_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_3_min_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_3_min_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "sch_major_3_min_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_1_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_1_min_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_1_min_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_1_min_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_2_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_2_min_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_2_min_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_2_min_trend",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_3_id",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_3_min_mean",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_3_min_std",
+      "fea_desc": ""
+    },
+    {
+      "fea_name": "major_3_min_trend",
+      "fea_desc": ""
+    }
+  ]
+}
