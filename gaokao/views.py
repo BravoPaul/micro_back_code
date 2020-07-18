@@ -79,7 +79,7 @@ def recommend(request):
     score = request.POST.get('score')
     academic_year = request.POST.get('academic_year')
     rec = Recommend()
-    result = rec.get_recommend_result(province_id, wenli, score,academic_year)
+    result = rec.get_recommend_result(province_id, wenli, academic_year, int(score))
     for key, values in result.items():
         for one_value in values:
             school_intro = School.objects.get(sch_id=one_value['sch_id'])
@@ -88,15 +88,15 @@ def recommend(request):
                 wenli=wenli,
                 batch_name=key
             )
-            if len(sch_score)==0:
+            if len(sch_score) == 0:
                 one_value['min_score'] = '-'
                 one_value['admission_count'] = '-'
             else:
-                if int(sch_score[0].min_score)>0 and int(sch_score[0].min_score)<1000:
+                if int(sch_score[0].min_score) > 0 and int(sch_score[0].min_score) < 1000:
                     score_format = sch_score[0].min_score
                 else:
                     score_format = '-'
-                if int(sch_score[0].admission_count)>0 and int(sch_score[0].admission_count)<100000:
+                if int(sch_score[0].admission_count) > 0 and int(sch_score[0].admission_count) < 100000:
                     admission_format = sch_score[0].admission_count
                 else:
                     admission_format = '-'
@@ -107,19 +107,31 @@ def recommend(request):
             one_value['sch_tags'] = school_intro.sch_tags
             one_value['sch_name'] = school_intro.sch_name
 
+            major_rank = one_value['major']
+            major_rank_dict = {}
+
+            for one_major_score in major_rank:
+                major_rank_dict[one_major_score['major_id']] = one_major_score['probability']
+
             school_major = school_intro.schoolmajor_set.filter(
                 academic_year=academic_year,
                 wenli=wenli,
                 batch_name=key
             )
+            one_value['major'] = []
+
             for one_major in school_major:
                 major = {}
-                major['probability'] = one_value['probability']
-                if int(one_major.min_score)>0 and int(one_major.min_score)<1000:
+                if major_rank_dict.get(one_major.enroll_major_id) is not None:
+                    major['probability'] = int(major_rank_dict.get(one_major.enroll_major_id))
+                else:
+                    major['probability'] = int(one_value['probability'])
+
+                if int(one_major.min_score) > 0 and int(one_major.min_score) < 1000:
                     score_format = sch_score[0].min_score
                 else:
                     score_format = '-'
-                if int(one_major.admission_count)>0 and int(one_major.admission_count)<100000:
+                if int(one_major.admission_count) > 0 and int(one_major.admission_count) < 100000:
                     admission_format = sch_score[0].admission_count
                 else:
                     admission_format = '-'
@@ -128,22 +140,15 @@ def recommend(request):
                 major['admission_count'] = admission_format
                 major['tuition'] = one_major.tuition
                 major['academic_rule'] = one_major.academic_rule
+                one_value['major'].append(major)
 
-                try:
-                    one_value['major'].append(major)
-                except KeyError:
-                    one_value['major'] = [major]
+    result_sort = {}
 
+    for key, values in result.items():
+        result_sort[key] = sorted(values,key=lambda k: k['probability'])
 
+    response = json.dumps(result_sort)
 
-    response = json.dumps(result)
     return HttpResponse(response, content_type="application/json")
 
 
-
-# def score(request):
-#     sch_id = request.POST.get('sch_id')
-#     school_intro = School.objects.get(sch_id=sch_id)
-#     school_score = school_intro.schoolscore_set.all()
-#     result_final = serializers.serialize('json', school_score)
-#     return HttpResponse(result_final, content_type="application/json", charset='utf-8')

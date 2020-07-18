@@ -268,7 +268,7 @@ class SchoolMajorSplit_2018(models.Model):
     max_score_rank_trend = models.IntegerField(default=100)
     m_level = models.IntegerField(default=-1)
 
-
+#
 
 class ModelRuleResult(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
@@ -281,3 +281,7 @@ class ModelRuleResult(models.Model):
     min_score_diff_std = models.IntegerField(default=-1)
     min_score_rank_mean = models.IntegerField(default=-1)
     min_score_rank_std = models.IntegerField(default=-1)
+    avg_score_diff_mean = models.IntegerField(default=-1)
+    avg_score_diff_std = models.IntegerField(default=-1)
+    avg_score_rank_mean = models.IntegerField(default=-1)
+    avg_score_rank_std = models.IntegerField(default=-1)

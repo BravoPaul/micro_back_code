@@ -69,7 +69,7 @@ class Model(object):
 
     # 这个模型是为了得到每个大学在当年录取的时候，每个专业的预测分
     def rule_model(self, academic_year='2019'):
-        from gaokao.models import  School, ModelRuleResult
+        from gaokao.models import School, ModelRuleResult
         import sqlite3
         import pandas as pd
         import numpy
@@ -80,6 +80,17 @@ class Model(object):
                                          cnx)
         df_major_split = pd.read_sql_query("SELECT * FROM gaokao_majorsplit", cnx)
         df_sch_major_score = pd.read_sql_query("SELECT * FROM gaokao_schoolmajorsplit", cnx)
+
+        df_sch_major_score = df_sch_major_score[
+            (df_sch_major_score['min_score_diff_mean'] >= 0) &
+            (df_sch_major_score['min_score_rank_mean'] >= 0) &
+            (df_sch_major_score['min_score_diff_std'] >= 0) &
+            (df_sch_major_score['min_score_rank_std'] >= 0) &
+            (df_sch_major_score['avg_score_diff_mean'] >= 0) &
+            (df_sch_major_score['avg_score_rank_mean'] >= 0) &
+            (df_sch_major_score['avg_score_diff_std'] >= 0) &
+            (df_sch_major_score['avg_score_rank_std'] >= 0)
+            ]
 
         df_sch_major_split = pd.merge(df_sch_major, df_major_split, left_on='enroll_major_name', right_on='major_name')
         df_sch_major_split_3 = df_sch_major_split[
@@ -109,8 +120,16 @@ class Model(object):
 
         df_sch_major_split_merge = pd.concat([df_sch_major_split_3, df_sch_major_split_2, df_sch_major_split_1])
         df_sch_major_score = df_sch_major_score[
-            ['school_id', 'wenli', 'batch_name', 'province_id', 'mname', 'm_level', 'min_score_diff_mean',
-             'min_score_rank_mean', 'min_score_diff_std', 'min_score_rank_std']]
+            ['school_id', 'wenli', 'batch_name', 'province_id', 'mname', 'm_level',
+             'min_score_diff_mean',
+             'min_score_rank_mean',
+             'min_score_diff_std',
+             'min_score_rank_std',
+             'avg_score_diff_mean',
+             'avg_score_rank_mean',
+             'avg_score_diff_std',
+             'avg_score_rank_std',
+             ]]
         df_sch_major_score_merge = pd.merge(df_sch_major_split_merge, df_sch_major_score,
                                             on=['school_id', 'wenli', 'batch_name', 'province_id', 'mname', 'm_level'])
 
@@ -122,27 +141,47 @@ class Model(object):
             else:
                 return 0.1
 
+        df_sch_major_score_merge['weight'] = df_sch_major_score_merge['m_level'].map(weight_cal)
+
+        def my_agg(x):
+
+            # d = {}
+            # d['a_sum'] = x['a'].sum()
+            # d['a_max'] = x['a'].max()
+            # d['b_mean'] = x['b'].mean()
+            # d['c_d_prodsum'] = (x['c'] * x['d']).sum()
+            # return pd.Series(d, index=['a_sum', 'a_max', 'b_mean', 'c_d_prodsum'])
+
+            names = {
+                'min_score_diff_mean': (x['min_score_diff_mean'] * x['weight']).sum() / x['weight'].sum(),
+                'min_score_diff_std': (x['min_score_diff_std'] * x['weight']).sum() / x['weight'].sum(),
+                'min_score_rank_mean': (x['min_score_rank_mean'] * x['weight']).sum() / x['weight'].sum(),
+                'min_score_rank_std': (x['min_score_rank_std'] * x['weight']).sum() / x['weight'].sum(),
+                'avg_score_diff_mean': (x['avg_score_diff_mean'] * x['weight']).sum() / x['weight'].sum(),
+                'avg_score_diff_std': (x['avg_score_diff_std'] * x['weight']).sum() / x['weight'].sum(),
+                'avg_score_rank_mean': (x['avg_score_rank_mean'] * x['weight']).sum() / x['weight'].sum(),
+                'avg_score_rank_std': (x['avg_score_rank_std'] * x['weight']).sum() / x['weight'].sum()
+            }
+            return pd.Series(names,
+                             [
+                                 'min_score_diff_mean',
+                                 'min_score_diff_std',
+                                 'min_score_rank_mean',
+                                 'min_score_rank_std',
+                                 'avg_score_diff_mean',
+                                 'avg_score_diff_std',
+                                 'avg_score_rank_mean',
+                                 'avg_score_rank_std'
+                             ])
+
         result_merge_grp = df_sch_major_score_merge.groupby(
-            ['school_id', 'wenli', 'batch_name', 'province_id', 'enroll_major_name', 'enroll_major_id',
-             'm_level']).mean().reset_index()
-
-        result_merge_grp['weight'] = result_merge_grp['m_level'].map(weight_cal)
-        result_merge_grp['min_score_rank_mean'] = result_merge_grp['min_score_rank_mean'] * result_merge_grp['weight']
-        result_merge_grp['min_score_diff_mean'] = result_merge_grp['min_score_diff_mean'] * result_merge_grp['weight']
-        result_merge_grp['min_score_rank_std'] = result_merge_grp['min_score_rank_std'] * result_merge_grp['weight']
-        result_merge_grp['min_score_diff_std'] = result_merge_grp['min_score_diff_std'] * result_merge_grp['weight']
-
-        result_merge_grp = result_merge_grp.groupby(
-            ['school_id', 'wenli', 'batch_name', 'province_id', 'enroll_major_name',
-             'enroll_major_id']).sum().reset_index()
-        result_merge_grp['min_score_rank_mean'] = result_merge_grp['min_score_rank_mean'] / result_merge_grp['weight']
-        result_merge_grp['min_score_diff_mean'] = result_merge_grp['min_score_diff_mean'] / result_merge_grp['weight']
-        result_merge_grp['min_score_rank_std'] = result_merge_grp['min_score_rank_std'] / result_merge_grp['weight']
-        result_merge_grp['min_score_diff_std'] = result_merge_grp['min_score_diff_std'] / result_merge_grp['weight']
-
-        # result_merge_grp.to_excel('/Users/kunyue/project_personal/my_project/mysite/data/dataxxx.xlsx')
+            ['school_id', 'wenli', 'batch_name', 'province_id', 'enroll_major_name', 'enroll_major_id']).apply(
+            my_agg).reset_index()
+        #
+        #
+        # # result_merge_grp.to_excel('/Users/kunyue/project_personal/my_project/mysite/data/dataxxx.xlsx')
         list_result = []
-        for index,row in result_merge_grp.iterrows():
+        for index, row in result_merge_grp.iterrows():
             kargs = {}
             kargs['enroll_major_id'] = row['enroll_major_id']
             kargs['enroll_major_name'] = row['enroll_major_name']
@@ -153,11 +192,15 @@ class Model(object):
             kargs['min_score_diff_std'] = row['min_score_diff_std']
             kargs['min_score_rank_mean'] = row['min_score_rank_mean']
             kargs['min_score_rank_std'] = row['min_score_rank_std']
+            kargs['avg_score_diff_mean'] = row['avg_score_diff_mean']
+            kargs['avg_score_diff_std'] = row['avg_score_diff_std']
+            kargs['avg_score_rank_mean'] = row['avg_score_rank_mean']
+            kargs['avg_score_rank_std'] = row['avg_score_rank_std']
+
             school = School.objects.get(sch_id=row['school_id'])
             list_result.append(ModelRuleResult(**kargs, school=school))
 
         ModelRuleResult.objects.bulk_create(list_result)
-
 
     def fea_generate(self):
         pass
