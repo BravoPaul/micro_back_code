@@ -36,6 +36,24 @@ def list(request):
     return HttpResponse(result_final, content_type="application/json")
 
 
+
+def searchlist(request):
+    result_sch_list = []
+    result_one_true = []
+    sch_name = request.POST.get('sch_name')
+    result_list = School.objects.all()
+
+    for one_school in result_list:
+        if one_school.sch_name==sch_name:
+            result_one_true.append(one_school)
+        elif one_school.sch_name.find(sch_name)>=0:
+            result_sch_list.append(one_school)
+    result_final = result_one_true+result_sch_list
+    result_final = serializers.serialize('json', result_final)
+    return HttpResponse(result_final, content_type="application/json")
+
+
+
 def detail(request):
     sch_id = request.POST.get('sch_id')
     school_intro = School.objects.get(sch_id=sch_id)

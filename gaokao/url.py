@@ -9,6 +9,7 @@ urlpatterns = [
     path('list', views.list, name='list'),
     path('detail', views.detail, name='detail'),
     path('recommend', views.recommend, name='recommend'),
+    path('searchlist', views.searchlist, name='searchlist'),
     # ex: /polls/5/
     # path('<str:school_id>/', views.detail, name='detail'),
 ]
