@@ -80,6 +80,7 @@ def recommend(request):
     academic_year = request.POST.get('academic_year')
     rec = Recommend()
     result = rec.get_recommend_result(province_id, wenli, academic_year, int(score))
+    print('获取推荐结果完成')
     for key, values in result.items():
         for one_value in values:
             school_intro = School.objects.get(sch_id=one_value['sch_id'])
@@ -148,6 +149,8 @@ def recommend(request):
         result_sort[key] = sorted(values,key=lambda k: k['probability'])
 
     response = json.dumps(result_sort)
+
+    print('获取推荐显示处理完成')
 
     return HttpResponse(response, content_type="application/json")
 

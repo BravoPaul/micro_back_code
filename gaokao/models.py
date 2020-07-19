@@ -268,8 +268,8 @@ class SchoolMajorSplit_2018(models.Model):
     max_score_rank_trend = models.IntegerField(default=100)
     m_level = models.IntegerField(default=-1)
 
-#
-
+# #
+# #
 class ModelRuleResult(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
     enroll_major_id = models.CharField(max_length=200, null=True, blank=True)
@@ -285,3 +285,5 @@ class ModelRuleResult(models.Model):
     avg_score_diff_std = models.IntegerField(default=-1)
     avg_score_rank_mean = models.IntegerField(default=-1)
     avg_score_rank_std = models.IntegerField(default=-1)
+    # 哪种算法做的处理
+    type = models.IntegerField(default=1)

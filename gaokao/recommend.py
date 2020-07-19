@@ -1,13 +1,29 @@
 # python manage.py shell < /Users/kunyue/project_personal/my_project/mysite/gaokao/recommend.py
 
 from gaokao.models import GaokaoMetaRank, School, GaokaoRecallScore, GaokaoRecallRank, GaokaoMetaScoreLine, SchoolMajor, \
-    MajorSplit
+    MajorSplit, ModelRuleResult
 
 
 class Recommend(object):
 
     # 专业改名字了怎么办
     # 新专业怎么办
+
+    def __init__(self):
+        self.scale = {
+            '本科第一批': {
+                'score': 5,
+                'rank': 100
+            },
+            '本科第二批': {
+                'score': 10,
+                'rank': 1000
+            },
+            '高职专科批': {
+                'score': 50,
+                'rank': 10000
+            }
+        }
 
     def get_recommend_prepare(self, province_id, wenli, year, score):
         from gaokao.models import GaokaoMetaRank, School, GaokaoRecallScore, GaokaoRecallRank, GaokaoMetaScoreLine, \
@@ -42,6 +58,7 @@ class Recommend(object):
         rankResult = self.rank(province_id, wenli, score_diff, score_rank, year, recallResult)
         return rankResult
 
+    # @todo 录取概率处理问题，感觉概率都偏小
     def rank(self, province_id, wenli, score_diff, score_rank, year, recallResult):
         from gaokao.models import GaokaoMetaRank, School, GaokaoRecallScore, GaokaoRecallRank, GaokaoMetaScoreLine, \
             SchoolMajor, MajorSplit
@@ -50,21 +67,39 @@ class Recommend(object):
 
         result_rank = {}
 
+        school_majors_score_1 = ModelRuleResult.objects.filter(wenli=wenli,
+                                                               province_id=province_id, type=1)
+        school_majors_score_2 = ModelRuleResult.objects.filter(wenli=wenli,
+                                                               province_id=province_id, type=2)
+        dict_result_1 = {}
+        for one_data in school_majors_score_1:
+            if dict_result_1.get(one_data.batch_name + '_' + str(one_data.school_id)) is None:
+                dict_result_1[one_data.batch_name + '_' + str(one_data.school_id)] = [one_data]
+            else:
+                dict_result_1[one_data.batch_name + '_' + str(one_data.school_id)].append(one_data)
+        dict_result_2 = {}
+        for one_data in school_majors_score_2:
+            if dict_result_2.get(one_data.batch_name + '_' + str(one_data.school_id)) is None:
+                dict_result_2[one_data.batch_name + '_' + str(one_data.school_id)] = [one_data]
+            else:
+                dict_result_2[one_data.batch_name + '_' + str(one_data.school_id)].append(one_data)
+
+
         for key, value in recallResult.items():
             result_rank_tmp = []
             for index, one_value in enumerate(value):
-                try:
-                    school_intro = School.objects.get(sch_id=one_value['sch_id'])
-                    school_majors_score = school_intro.modelruleresult_set.filter(batch_name=key, wenli=wenli,
-                                                                                  province_id=province_id)
-                    one_value['major'] = []
-                    min_probability = 0
-                    for one_major_score in school_majors_score:
+                sch_id = one_value['sch_id']
+                one_value['major'] = []
+                min_probability = 0
+                if dict_result_1.get(key + '_' + sch_id) is not None:
+                    for one_major_score in dict_result_1[key + '_' + sch_id]:
                         major_tmp = {}
 
-                        scall_score_min = 1 if int(one_major_score.min_score_diff_std) < 1 else int(
+                        scall_score_min = self.scale[key]['score'] if int(one_major_score.min_score_diff_std) < \
+                                                                      self.scale[key]['score'] else int(
                             one_major_score.min_score_diff_std)
-                        scall_rank_min = 1 if int(one_major_score.min_score_rank_std) < 1 else int(
+                        scall_rank_min = self.scale[key]['rank'] if int(one_major_score.min_score_rank_std) < \
+                                                                    self.scale[key]['rank'] else int(
                             one_major_score.min_score_rank_std)
                         probability_score_min = norm.cdf(x=int(score_diff[key]),
                                                          loc=int(one_major_score.min_score_diff_mean),
@@ -75,9 +110,11 @@ class Recommend(object):
                         probability_min = (probability_score_min + probability_rank_min) / 2
 
                         # avg
-                        scall_score_avg = 1 if int(one_major_score.avg_score_diff_std) < 1 else int(
+                        scall_score_avg = self.scale[key]['score'] if int(one_major_score.avg_score_diff_std) < \
+                                                                      self.scale[key]['score'] else int(
                             one_major_score.avg_score_diff_std)
-                        scall_rank_avg = 1 if int(one_major_score.avg_score_rank_std) < 1 else int(
+                        scall_rank_avg = self.scale[key]['rank'] if int(one_major_score.avg_score_rank_std) < \
+                                                                    self.scale[key]['rank'] else int(
                             one_major_score.avg_score_rank_std)
                         probability_score_avg = norm.cdf(x=int(score_diff[key]),
                                                          loc=int(one_major_score.avg_score_diff_mean),
@@ -96,27 +133,52 @@ class Recommend(object):
                         major_tmp['major_id'] = str(one_major_score.enroll_major_id)
                         major_tmp['probability'] = int(round(probability, 2) * 100)
 
-                        # major_tmp['loc_score'] = one_major_score.min_score_diff_mean
-                        # major_tmp['score_diff'] = score_diff[key]
-                        # major_tmp['scale_score'] = one_major_score.min_score_diff_std
-                        # major_tmp['loc_rank'] = one_major_score.min_score_rank_mean
-                        # major_tmp['rank_diff'] = score_rank
-                        # major_tmp['scale_rank'] = one_major_score.min_score_rank_std
+                        one_value['major'].append(major_tmp)
+
+                elif dict_result_2.get(key + '_' + sch_id) is not None:
+                    for one_major_score in dict_result_2[key + '_' + sch_id]:
+                        major_tmp = {}
+                        scall_score_min = self.scale[key]['score'] if int(one_major_score.min_score_diff_std) < \
+                                                                      self.scale[key]['score'] else int(
+                            one_major_score.min_score_diff_std)
+                        scall_rank_min = self.scale[key]['rank'] if int(one_major_score.min_score_rank_std) < \
+                                                                    self.scale[key]['rank'] else int(
+                            one_major_score.min_score_rank_std)
+                        probability_score_min = norm.cdf(x=int(score_diff[key]),
+                                                         loc=int(one_major_score.min_score_diff_mean),
+                                                         scale=scall_score_min)
+                        probability_rank_min = 1 - norm.cdf(x=int(score_rank),
+                                                            loc=int(one_major_score.min_score_rank_mean),
+                                                            scale=scall_rank_min)
+                        probability_min = (probability_score_min + probability_rank_min) / 2
+
+                        if probability_min > min_probability:
+                            min_probability = probability_min
+
+                        major_tmp['major_id'] = str(one_major_score.enroll_major_id)
+                        major_tmp['probability'] = int(round(probability_min, 2) * 100)
 
                         one_value['major'].append(major_tmp)
 
-                    one_value['probability'] = int(round(min_probability, 2) * 100)
+                else:
+                    print(key + '_' + sch_id)
 
-                    if one_value['probability'] > 3 and one_value['probability'] < 98:
-                        json_tmp = {
-                            'sch_id': one_value['sch_id'],
-                            'probability': one_value['probability'],
-                            'major': one_value['major']
-                        }
-                        result_rank_tmp.append(json_tmp)
-                except:
-                    continue
+
+                one_value['probability'] = int(round(min_probability, 2) * 100)
+
+                if one_value['probability'] > 0 and one_value['probability'] <= 100:
+                    json_tmp = {
+                        'sch_id': one_value['sch_id'],
+                        'probability': one_value['probability'],
+                        'major': one_value['major']
+                    }
+                    result_rank_tmp.append(json_tmp)
             result_rank[key] = result_rank_tmp
+
+        print('打分情况如下: \n')
+        print(len(result_rank['本科第一批']))
+        print(len(result_rank['本科第二批']))
+        print(len(result_rank['高职专科批']))
 
         return result_rank
 
@@ -157,17 +219,15 @@ class Recommend(object):
                 for one_data in recall_data:
                     scores.append(one_data.score)
                     if one_data.score == score_diff:
-                        sch_wins = one_data.school_win.split(',')[0:30]
-                        school_loses = one_data.school_lose.split(',')[0:30]
+                        sch_wins = one_data.school_win.split(',')
+                        school_loses = one_data.school_lose.split(',')
                         school_predicts = one_data.school_predict.split(',')
-                        for one_sch in sch_wins:
-                            result[key].append({'sch_id': one_sch, 'probability': 90})
-                        for one_sch in school_loses:
-                            result[key].append({'sch_id': one_sch, 'probability': 10})
                         for one_sch in school_predicts:
                             result[key].append({'sch_id': one_sch, 'probability': 50})
-
-                print(len(result[key]))
+                        for one_sch in school_loses:
+                            result[key].append({'sch_id': one_sch, 'probability': 10})
+                        for one_sch in sch_wins:
+                            result[key].append({'sch_id': one_sch, 'probability': 90})
 
                 if len(result[key]) == 0:
                     max_score = max(scores)
@@ -176,27 +236,35 @@ class Recommend(object):
                     min_index = scores.index(min_score)
                     if score_diff > max_score:
                         print('这里max')
-                        sch_wins = recall_data[max_index].school_win.split(',')[0:30]
+                        sch_wins = recall_data[max_index].school_win.split(',')
                         school_predicts = recall_data[max_index].school_predict.split(',')
-
+                        for one_sch in school_predicts:
+                            if one_sch != '':
+                                result[key].append({'sch_id': one_sch, 'probability': 90})
                         for one_sch in sch_wins:
                             if one_sch != '':
                                 result[key].append({'sch_id': one_sch, 'probability': 90})
-                        for one_sch in school_predicts:
-                            if one_sch != '':
-                                result[key].append({'sch_id': one_sch, 'probability': 90})
+
                     elif score_diff < min_score:
                         print('这里min')
-                        school_loses = recall_data[min_index].school_lose.split(',')[0:30]
+                        school_loses = recall_data[min_index].school_lose.split(',')
                         school_predicts = recall_data[min_index].school_predict.split(',')
+                        for one_sch in school_predicts:
+                            if one_sch != '':
+                                result[key].append({'sch_id': one_sch, 'probability': 10})
                         for one_sch in school_loses:
                             if one_sch != '':
                                 result[key].append({'sch_id': one_sch, 'probability': 10})
-                        for one_sch in school_predicts:
-                            if one_sch != '':
-                                result[key].append({'sch_id': one_sch, 'probability': 10})
+
                     else:
                         raise ValueError
+
+            result[key] = result[key][0:100]
+
+        print('召回情况如下: \n')
+        print(len(result['本科第一批']))
+        print(len(result['本科第二批']))
+        print(len(result['高职专科批']))
 
         # print(result)
 
